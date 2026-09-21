@@ -216,11 +216,11 @@ function render(items, key) {
     const icon = iconOf(a.icon), project = projectOf(a.project), edits = a.publishCount || 0;
     const t = document.createElement("a");
     t.className = "tile";
-    t.href = /^https:\/\//.test(a.url) ? a.url : "#";
-    t.target = "_blank"; t.rel = "noopener";
+    if (/^https:\/\/claude\.ai\//.test(a.url)) t.href = a.url;
+    t.target = "_blank"; t.rel = "noopener noreferrer";
     t.innerHTML = `<div class="thumb"><div class="ph" aria-hidden="true"><span class="e"></span><span></span></div></div>
       <div class="meta"><b><span class="e" aria-hidden="true"></span><span></span></b><p></p>
-      <div class="tags"><span class="badge"></span><span></span>${edits > 1 ? `<span>${edits} edits</span>` : ""}</div></div>`;
+      <div class="tags"><span class="badge"></span><span></span><span></span></div></div>`;
     const [phIcon, phTitle] = t.querySelectorAll(".ph span");
     phIcon.textContent = icon; phTitle.textContent = a.title || "Untitled";
     const [bIcon, bTitle] = t.querySelectorAll("b span");
@@ -228,6 +228,8 @@ function render(items, key) {
     t.querySelector("p").textContent = a.description || "";
     t.querySelector(".badge").textContent = project;
     t.querySelector(".tags span:nth-child(2)").textContent = a.updatedAt ? fmt(a.updatedAt) : "";
+    const editsEl = t.querySelector(".tags span:nth-child(3)");
+    if (edits > 1) editsEl.textContent = `${edits} edits`; else editsEl.remove();
     if (a.thumb) {
       const th = t.querySelector(".thumb");
       const img = document.createElement("img");

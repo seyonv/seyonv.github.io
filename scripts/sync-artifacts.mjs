@@ -5,11 +5,13 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { extractEvents, reduceArtifacts } from "./lib/artifacts.mjs";
+import { projectFor } from "./lib/project.mjs";
 import { STATE, STATE_DIR } from "./lib/paths.mjs";
 
 const PROJECTS_DIR = join(homedir(), ".claude", "projects");
 const PROJECT_PREFIX = "-Users-seyonvasantharajan-Desktop-repos-";
 const PROJECT_PREFIX_EXACT = "-Users-seyonvasantharajan-Desktop-repos";
+const REPOS_ROOT = join(homedir(), "Desktop", "repos");
 
 function deriveProject(dirName) {
   if (dirName === PROJECT_PREFIX_EXACT) return "repos";
@@ -78,6 +80,7 @@ function main() {
 
   const rows = reduceArtifacts(allEvents, prev);
   for (const row of Object.values(rows)) {
+    row.project = projectFor(row, row.project, REPOS_ROOT);
     const title = localTitleFor(row);
     if (title) row.localTitle = title;
   }
