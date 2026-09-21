@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { artifactId, extractEvents, reduceArtifacts } from "../scripts/lib/artifacts.mjs";
+import { artifactId, extractEvents, isSafeId, reduceArtifacts } from "../scripts/lib/artifacts.mjs";
 
 const ctx = { project: "widget-lab", session: "sess-1" };
 
@@ -27,6 +27,26 @@ test("artifactId: extracts uuid from /code/artifact/", () => {
 
 test("artifactId: extracts short id from /artifact/", () => {
   assert.equal(artifactId("https://claude.ai/artifact/abc123"), "abc123");
+});
+
+test("artifactId: null for URLs that aren't /artifact/<id>, or whose id isn't a plain token", () => {
+  assert.equal(artifactId("https://example.test/some/page"), null);
+  assert.equal(artifactId("https://claude.ai/artifact/..%2Fx"), null);
+  assert.equal(artifactId(undefined), null);
+});
+
+test("isSafeId: accepts uuids and short ids, rejects path-like ids", () => {
+  assert.equal(isSafeId("2cd570bf-705b-4632-afb2-65d4c579a09a"), true);
+  assert.equal(isSafeId("Mn2R64kNMUfmeFjBJHv1nz"), true);
+  assert.equal(isSafeId("../x"), false);
+  assert.equal(isSafeId("a/b"), false);
+  assert.equal(isSafeId(""), false);
+  assert.equal(isSafeId(null), false);
+});
+
+test("extractEvents skips a publish whose url has no artifact id", () => {
+  const lines = publishLine({ ts: "2026-01-01T00:00:00Z", url: "https://example.test/not-an-artifact" });
+  assert.deepEqual(extractEvents(lines, ctx), []);
 });
 
 // Rule 1: publish detection

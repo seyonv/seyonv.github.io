@@ -1,5 +1,6 @@
 // Pure helpers for scripts/thumbs.mjs: which rows need a (re)capture.
 import { join } from "node:path";
+import { isSafeId } from "./artifacts.mjs";
 
 export const thumbVer = (row) => row.version || row.updatedAt || null;
 
@@ -11,8 +12,9 @@ export function needsCapture(row, { force = false } = {}) {
 
 // Where to capture a row from: its local file, else a saved copy of the
 // published page (PAGES/<id>/index.html), else the hosted URL. `exists` is
-// injected so this stays pure.
+// injected so this stays pure. Unsafe ids get no source (and no fs access).
 export function pickSource(row, { pagesDir, exists }) {
+  if (!isSafeId(row.id)) return null;
   if (row.file && exists(row.file)) return { kind: "local", file: row.file };
   const page = join(pagesDir, row.id, "index.html");
   if (exists(page)) return { kind: "snapshot", file: page };

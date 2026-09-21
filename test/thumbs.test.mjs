@@ -40,3 +40,12 @@ test("pickSource: local file wins, then saved page, then remote, else nothing", 
   assert.deepEqual(pickSource(row, { pagesDir, exists: have() }), { kind: "remote" });
   assert.equal(pickSource({ id: "a1" }, { pagesDir, exists: have() }), null);
 });
+
+test("pickSource: unsafe ids get no source, so nothing touches the fs", () => {
+  let probed = false;
+  const exists = () => { probed = true; return true; };
+  for (const id of ["../x", "a/b"]) {
+    assert.equal(pickSource({ id, file: "/repo/card.html", url: "https://example.test/x" }, { pagesDir: "/p", exists }), null);
+  }
+  assert.equal(probed, false);
+});

@@ -1,6 +1,11 @@
 // Turns Claude Code transcript lines into claude.ai artifact records. Pure: no fs, no clock.
+// Ids end up in filesystem paths (thumbs, saved pages), so only plain tokens count.
+export const isSafeId = (id) => typeof id === "string" && /^[A-Za-z0-9_-]+$/.test(id);
+
+// The id from a /artifact/<id> URL, or null when the URL isn't one (or the id isn't safe).
 export function artifactId(url) {
-  return url.match(/\/artifact\/([^/?#]+)/)?.[1] || url;
+  const id = String(url || "").match(/\/artifact\/([^/?#]+)/)?.[1];
+  return isSafeId(id) ? id : null;
 }
 
 export function extractEvents(lines, ctx) {
@@ -14,14 +19,14 @@ export function extractEvents(lines, ctx) {
       if (c.type !== "tool_result" || c.is_error || !uses.has(c.tool_use_id)) continue;
       const { input, cwd } = uses.get(c.tool_use_id), r = d.toolUseResult || {}, ts = d.timestamp;
       const action = input.action || "publish";
-      if (action === "publish" && !input.asset && r.url) {
+      if (action === "publish" && !input.asset && r.url && artifactId(r.url)) {
         events.push({ type: "publish", key: c.tool_use_id, ts, url: r.url, id: artifactId(r.url), title: r.title || input.title || null,
           version: r.version || null, file: r.path || input.file_path || null, description: input.description || null,
           icon: input.icon || input.favicon || null, cwd: cwd || null, ...ctx });
       } else if (action === "list" && Array.isArray(r.artifacts)) {
-        for (const a of r.artifacts) events.push({ type: "list", ts, url: a.url, id: artifactId(a.url), title: a.title,
+        for (const a of r.artifacts) if (artifactId(a.url)) events.push({ type: "list", ts, url: a.url, id: artifactId(a.url), title: a.title,
           icon: a.favicon || null, updatedAt: a.updatedAt, ...ctx });
-      } else if (action === "delete" && r.artifact_delete?.url) {
+      } else if (action === "delete" && artifactId(r.artifact_delete?.url)) {
         events.push({ type: "delete", ts, url: r.artifact_delete.url, id: artifactId(r.artifact_delete.url) });
       }
     }
@@ -42,7 +47,7 @@ export function reduceArtifacts(events, prev = {}) {
   for (const [pid, r] of Object.entries(prev)) {
     for (const a of r.aliases || []) {
       const aid = artifactId(a);
-      if (aid !== pid) alias[aid] = pid;
+      if (aid && aid !== pid) alias[aid] = pid;
     }
   }
   // If an event resolves (directly or via alias) to a prev row that hasn't been

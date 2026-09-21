@@ -2,6 +2,7 @@ import { randomBytes, createCipheriv, createDecipheriv, createHmac } from "node:
 import { mkdir, readdir, readFile, rm, writeFile, chmod, stat, rename } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { isSafeId } from "./artifacts.mjs";
 
 export const newKey = () => randomBytes(32);
 export const b64url = (b) => Buffer.from(b).toString("base64url");
@@ -59,7 +60,7 @@ export async function buildManifest({ state, thumbsDir, key }) {
   if (thumbsDir && existsSync(thumbsDir)) {
     for (const f of await readdir(thumbsDir)) {
       const m = f.match(/^(.+)\.jpg$/);
-      if (m && state[m[1]]) hasThumb.add(m[1]);
+      if (m && isSafeId(m[1]) && state[m[1]]) hasThumb.add(m[1]);
     }
   }
   const rows = Object.values(state).map((r) => ({
@@ -114,7 +115,7 @@ export async function sealAll({ state, thumbsDir, outDir, sealedPath, key }) {
       const m = f.match(/^(.+)\.jpg$/);
       if (!m) continue;
       const id = m[1];
-      if (!state[id]) continue; // skip orphaned thumbnails with no matching row
+      if (!isSafeId(id) || !state[id]) continue; // skip unsafe ids and orphaned thumbnails
       const plain = await readFile(join(thumbsDir, f));
       await sealOne(`${blobName(key, id)}.enc`, plain);
     }

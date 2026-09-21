@@ -2,7 +2,7 @@
 // Captures a 640px JPEG thumbnail per artifact into THUMBS (outside the repo)
 // and records row.thumb = {ver, kind, at} in STATE. Source: the local file,
 // else a saved published page in PAGES/<id>/index.html, else the hosted URL.
-// Flags: --only <id>, --force, --no-remote.
+// Flags: --only <id>, --force, --remote (opt-in: claude.ai blocks headless Chromium).
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
@@ -10,11 +10,12 @@ import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { STATE, STATE_DIR, THUMBS, PAGES, REPO } from "./lib/paths.mjs";
 import { needsCapture, pickSource, thumbVer } from "./lib/thumbs.mjs";
+import { isSafeId } from "./lib/artifacts.mjs";
 
 const B = join(homedir(), ".claude", "skills", "gstack", "browse", "dist", "browse");
 const args = process.argv.slice(2);
 const force = args.includes("--force");
-const noRemote = args.includes("--no-remote");
+const remote = args.includes("--remote");
 const only = args.includes("--only") ? args[args.indexOf("--only") + 1] : null;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -98,12 +99,18 @@ async function main() {
   // browse only writes screenshots under /private/tmp or the repo; never the repo.
   const tmp = mkdtempSync("/private/tmp/seyonv-thumbs-");
   const counts = { local: 0, snapshot: 0, remote: 0, placeholder: 0, kept: 0 };
-  let remoteOk = !noRemote;
+  let remoteOk = remote;
 
   try {
     for (const row of Object.values(state)) {
       if (only && row.id !== only) continue;
       if (!needsCapture(row, { force })) { counts.kept++; continue; }
+
+      if (!isSafeId(row.id)) { // ids become file names; never touch the fs for an odd one
+        counts.placeholder++;
+        console.error(`thumb: skipping unsafe id ${JSON.stringify(row.id)}`);
+        continue;
+      }
 
       const png = join(tmp, `${row.id}.png`);
       let kind = "placeholder";
