@@ -52,20 +52,27 @@ export function reduceArtifacts(events, prev = {}) {
     if (!rows[id] && prev[id] && !deleted.has(id)) rows[id] = { ...prev[id], aliases: [...(prev[id].aliases || [])] };
     return rows[id];
   };
+  // publishCount = max(prev's count, publish events seen this run) — see the final pass
+  // below. It must never grow just because a run re-processes the same events (no
+  // incremental +1 forever), and must not shrink just because old transcripts got pruned.
+  const freshPublishCounts = new Map();
   const sorted = [...events].sort((a, b) => (a.ts || "").localeCompare(b.ts || "") || (a.type === "list") - (b.type === "list"));
   for (const e of sorted) {
     const id = alias[e.id] || e.id;
     if (e.type === "publish") {
-      // publishCount/firstSeen are recomputed fully from this run's events, so a fresh
-      // publish never seeds those from prev (that would make the count grow forever
-      // across runs). Known aliases are still worth keeping: without them, a publish
-      // that's chronologically first would create a blank row before a later list event
-      // for a known alias could seed one, permanently dropping that alias.
-      const r = rows[id] || { id, url: e.url, aliases: deleted.has(id) ? [] : [...(prev[id]?.aliases || [])],
-        description: null, icon: null, publishCount: 0, firstSeen: e.ts };
+      // firstSeen is recomputed fully from this run's events, so a fresh publish never
+      // seeds it from prev (that would make it stick to a stale earliest-ever value in a
+      // way rule 7 doesn't ask for). description/icon/aliases ARE seeded from prev (when
+      // not deleted this run) so a publish that's missing them, or that's chronologically
+      // first (before a later list event's seeded() call would otherwise supply them),
+      // doesn't wipe out what's already known.
+      const base = deleted.has(id) ? null : prev[id];
+      const r = rows[id] || { id, url: e.url, aliases: [...(base?.aliases || [])],
+        description: base?.description ?? null, icon: base?.icon ?? null, publishCount: 0, firstSeen: e.ts };
       Object.assign(r, { title: e.title || r.title, version: e.version, file: e.file, updatedAt: e.ts, cwd: e.cwd,
         project: e.project, description: e.description || r.description, icon: e.icon || r.icon });
-      r.publishCount++; rows[id] = r;
+      rows[id] = r;
+      freshPublishCounts.set(id, (freshPublishCounts.get(id) || 0) + 1);
     } else if (e.type === "list") {
       seeded(id);
       if (rows[id]) { if (isNewer(e.updatedAt, rows[id].updatedAt)) rows[id].updatedAt = e.updatedAt; continue; }
@@ -84,6 +91,11 @@ export function reduceArtifacts(events, prev = {}) {
     } else if (e.type === "delete") {
       delete rows[id]; deleted.add(id);
     }
+  }
+  for (const [id, count] of freshPublishCounts) {
+    if (!rows[id]) continue;
+    const prevCount = deleted.has(id) ? 0 : (prev[id]?.publishCount || 0);
+    rows[id].publishCount = Math.max(prevCount, count);
   }
   for (const [id, r] of Object.entries(prev)) {
     if (!rows[id] && !deleted.has(id) && !Object.values(rows).some((x) => x.aliases.includes(r.url))) rows[id] = r;

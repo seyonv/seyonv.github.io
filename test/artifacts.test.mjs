@@ -249,6 +249,72 @@ test("rule6/5: delete via a prior-run alias url removes the canonical prev row",
   assert.equal(Object.keys(rows).length, 0);
 });
 
+// Fix round 2, finding 1: a fresh publish row must not wipe description/icon that were
+// already known from prev when this run's publish event doesn't carry them.
+test("fix2/1: a publish event with no description/icon falls back to prev's values", () => {
+  const prev = {
+    "id1": { id: "id1", url: "https://claude.ai/code/artifact/id1", aliases: [], title: "Widget Overview",
+      description: "Desc A", icon: "🎨", project: "widget-lab", cwd: "/r/widget-lab", file: "/r/p.html",
+      version: "v1", updatedAt: "2026-01-01T00:00:00Z", firstSeen: "2026-01-01T00:00:00Z", publishCount: 3 },
+  };
+  const p1 = publishLine({ ts: "2026-01-05T00:00:00Z", url: "https://claude.ai/code/artifact/id1",
+    description: null, icon: null });
+  const events = extractEvents(p1, ctx);
+  const rows = reduceArtifacts(events, prev);
+  assert.equal(rows["id1"].description, "Desc A");
+  assert.equal(rows["id1"].icon, "🎨");
+});
+
+// Fix round 2, finding 2 (controller ruling): publishCount = max(prev's count, publish
+// events seen this run). Must not grow across repeated runs, and must not shrink just
+// because a transcript with older publishes got pruned.
+test("fix2/2: publishCount does not grow when reduceArtifacts is run twice on the same events", () => {
+  const p1 = publishLine({ ts: "2026-01-01T00:00:00Z", toolId: "t1" });
+  const p2 = publishLine({ ts: "2026-01-01T01:00:00Z", toolId: "t2" });
+  const events = extractEvents([...p1, ...p2], ctx);
+  const rowsA = reduceArtifacts(events, {});
+  assert.equal(rowsA["2cd570bf-705b-4632-afb2-65d4c579a09a"].publishCount, 2);
+  const rowsB = reduceArtifacts(events, rowsA);
+  assert.equal(rowsB["2cd570bf-705b-4632-afb2-65d4c579a09a"].publishCount, 2);
+});
+
+test("fix2/2: publishCount keeps prev's higher count when this run only has fewer publish events (pruned transcript)", () => {
+  const prev = {
+    "id1": { id: "id1", url: "https://claude.ai/code/artifact/id1", aliases: [], title: "Widget Overview",
+      description: null, icon: null, project: "widget-lab", cwd: null, file: null, version: "v1",
+      updatedAt: "2026-01-01T00:00:00Z", firstSeen: "2026-01-01T00:00:00Z", publishCount: 3 },
+  };
+  const p1 = publishLine({ ts: "2026-01-05T00:00:00Z", url: "https://claude.ai/code/artifact/id1" });
+  const events = extractEvents(p1, ctx);
+  const rows = reduceArtifacts(events, prev);
+  assert.equal(rows["id1"].publishCount, 3);
+});
+
+// Fix round 2, finding 3(b): isNewer compares chronologically, not lexicographically, so
+// a millisecond-precision timestamp correctly wins over a whole-second one that reads as
+// "later" as a raw string, and the reverse never downgrades a more precise value.
+test("fix2/3b: a list event's ms-precision updatedAt is recognized as newer than a whole-second row updatedAt", () => {
+  const p1 = publishLine({ ts: "2026-01-01T00:00:00Z" });
+  const events = extractEvents(p1, ctx);
+  events.push({ type: "list", ts: "2026-01-01T00:00:20Z",
+    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
+    id: "2cd570bf-705b-4632-afb2-65d4c579a09a", title: "Widget Overview", icon: null,
+    updatedAt: "2026-01-01T00:00:11.413Z", ...ctx });
+  const rows = reduceArtifacts(events, {});
+  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].updatedAt, "2026-01-01T00:00:11.413Z");
+});
+
+test("fix2/3b: a whole-second updatedAt never downgrades a more precise, later ms-precision one", () => {
+  const p1 = publishLine({ ts: "2026-01-01T00:00:11.413Z" });
+  const events = extractEvents(p1, ctx);
+  events.push({ type: "list", ts: "2026-01-01T00:00:20Z",
+    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
+    id: "2cd570bf-705b-4632-afb2-65d4c579a09a", title: "Widget Overview", icon: null,
+    updatedAt: "2026-01-01T00:00:11Z", ...ctx });
+  const rows = reduceArtifacts(events, {});
+  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].updatedAt, "2026-01-01T00:00:11.413Z");
+});
+
 // Rule 7: deterministic output
 test("rule7: running the reduction twice on the same input gives equal JSON", () => {
   const p1 = publishLine({ ts: "2026-01-01T00:00:00Z" });
