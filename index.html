@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seyon Vasantharajan</title>
+<style>
+  :root {
+    --bg: #fbfbf9;
+    --surface: #f4f4f1;
+    --border: #dedcd6;
+    --text: #1c1f23;
+    --muted: #6b7068;
+    --accent: #4a9d77;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171a;
+      --surface: #1d2024;
+      --border: #32373d;
+      --text: #e6e8ea;
+      --muted: #9aa1a9;
+      --accent: #5fb37f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px;
+  }
+  main {
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  p.tagline {
+    color: var(--muted);
+    margin: 0 0 28px;
+    font-size: 0.95rem;
+  }
+  a.card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.15s ease;
+  }
+  a.card:hover {
+    border-color: var(--accent);
+  }
+  a.card .label {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  a.card .desc {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Seyon Vasantharajan</h1>
+  <p class="tagline">Building things and writing them down.</p>
+  <a class="card" href="/explainers/">
+    <div class="label">Explainers &rarr;</div>
+    <div class="desc">Visual notes on ideas worth understanding</div>
+  </a>
+</main>
+</body>
+</html>
