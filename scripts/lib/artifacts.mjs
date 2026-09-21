@@ -90,6 +90,9 @@ export function reduceArtifacts(events, prev = {}) {
         file: null, version: null, updatedAt: e.updatedAt, firstSeen: e.ts, publishCount: 0 };
     } else if (e.type === "delete") {
       delete rows[id]; deleted.add(id);
+      // A publish before this delete shouldn't count toward publishCount after a
+      // publish-after-delete recreation — that's a fresh start (see the publish branch).
+      freshPublishCounts.delete(id);
     }
   }
   for (const [id, count] of freshPublishCounts) {

@@ -315,6 +315,24 @@ test("fix2/3b: a whole-second updatedAt never downgrades a more precise, later m
   assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].updatedAt, "2026-01-01T00:00:11.413Z");
 });
 
+// Fix round 3: publish(t1) -> delete -> publish(t2) in one run must not count the
+// pre-delete publish toward publishCount, since the delete->publish sequence is a fresh
+// recreation (matching how aliases/description/icon already reset on delete).
+test("fix3: publish, then delete, then publish again in one run gives publishCount 1 from the post-delete publish only", () => {
+  const p1 = publishLine({ ts: "2026-01-01T00:00:00Z", toolId: "t1", description: "Desc before delete", icon: "🕰️" });
+  const p2 = publishLine({ ts: "2026-01-01T02:00:00Z", toolId: "t2", description: "Desc after delete", icon: "🌱" });
+  const events = extractEvents(p1, ctx);
+  events.push({ type: "delete", ts: "2026-01-01T01:00:00Z",
+    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
+    id: "2cd570bf-705b-4632-afb2-65d4c579a09a" });
+  events.push(...extractEvents(p2, ctx));
+  const rows = reduceArtifacts(events, {});
+  const row = rows["2cd570bf-705b-4632-afb2-65d4c579a09a"];
+  assert.equal(row.publishCount, 1);
+  assert.equal(row.description, "Desc after delete");
+  assert.equal(row.icon, "🌱");
+});
+
 // Rule 7: deterministic output
 test("rule7: running the reduction twice on the same input gives equal JSON", () => {
   const p1 = publishLine({ ts: "2026-01-01T00:00:00Z" });
