@@ -56,7 +56,7 @@ test("leak check: sealed manifest bytes never contain the plaintext title", asyn
   const dir = await mkdtemp(join(tmpdir(), "seal-leak-"));
   try {
     const key = newKey();
-    const secretTitle = "Blackbird / Flycar — Interview Reference";
+    const secretTitle = "Zebra Quartz — Private Notes";
     const state = {
       x1: {
         id: "x1", url: "https://claude.ai/code/artifact/x1", title: secretTitle,
@@ -72,7 +72,7 @@ test("leak check: sealed manifest bytes never contain the plaintext title", asyn
     assert.ok(files.length > 0);
     for (const f of files) {
       const bytes = await readFile(join(outDir, f));
-      assert.ok(!bytes.includes(Buffer.from("Blackbird")), `${f} leaked plaintext`);
+      assert.ok(!bytes.includes(Buffer.from("Zebra")), `${f} leaked plaintext`);
     }
   } finally {
     await rm(dir, { recursive: true, force: true });

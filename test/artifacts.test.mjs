@@ -9,7 +9,7 @@ function line(obj) {
 }
 
 function publishLine({ ts, toolId = "t1", filePath = "/r/p.html", description = "A test card", icon = "🃏",
-  cwd = "/r/widget-lab", url = "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
+  cwd = "/r/widget-lab", url = "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001",
   title = "Widget Overview", version = "v1", path = "/r/p.html", extra = {} }) {
   const assistant = line({ type: "assistant", timestamp: ts, cwd,
     message: { content: [{ type: "tool_use", id: toolId, name: "Artifact",
@@ -21,8 +21,8 @@ function publishLine({ ts, toolId = "t1", filePath = "/r/p.html", description = 
 }
 
 test("artifactId: extracts uuid from /code/artifact/", () => {
-  assert.equal(artifactId("https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a"),
-    "2cd570bf-705b-4632-afb2-65d4c579a09a");
+  assert.equal(artifactId("https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001"),
+    "00000000-0000-4000-8000-000000000001");
 });
 
 test("artifactId: extracts short id from /artifact/", () => {
@@ -36,7 +36,7 @@ test("artifactId: null for URLs that aren't /artifact/<id>, or whose id isn't a 
 });
 
 test("isSafeId: accepts uuids and short ids, rejects path-like ids", () => {
-  assert.equal(isSafeId("2cd570bf-705b-4632-afb2-65d4c579a09a"), true);
+  assert.equal(isSafeId("00000000-0000-4000-8000-000000000001"), true);
   assert.equal(isSafeId("Mn2R64kNMUfmeFjBJHv1nz"), true);
   assert.equal(isSafeId("../x"), false);
   assert.equal(isSafeId("a/b"), false);
@@ -55,7 +55,7 @@ test("rule1: a valid publish tool_result produces a publish event", () => {
   const events = extractEvents(lines, ctx);
   assert.equal(events.length, 1);
   assert.equal(events[0].type, "publish");
-  assert.equal(events[0].id, "2cd570bf-705b-4632-afb2-65d4c579a09a");
+  assert.equal(events[0].id, "00000000-0000-4000-8000-000000000001");
 });
 
 test("rule1: is_error true is ignored", () => {
@@ -113,7 +113,7 @@ test("rule2: latest publish wins title/version/file/updatedAt/cwd; description/i
     filePath: "/r/second.html", path: "/r/second.html", cwd: "/r/widget-lab-2", description: null, icon: null });
   const events = extractEvents([...p1, ...p2], ctx);
   const rows = reduceArtifacts(events, {});
-  const row = rows["2cd570bf-705b-4632-afb2-65d4c579a09a"];
+  const row = rows["00000000-0000-4000-8000-000000000001"];
   assert.equal(row.title, "Second Title");
   assert.equal(row.version, "v2");
   assert.equal(row.file, "/r/second.html");
@@ -129,14 +129,14 @@ test("rule3: list adds unknown artifacts and only raises updatedAt for known one
   const p1 = publishLine({ ts: "2026-01-01T00:00:00Z" });
   const events = extractEvents(p1, ctx);
   events.push({ type: "list", ts: "2026-01-02T00:00:00Z",
-    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
-    id: "2cd570bf-705b-4632-afb2-65d4c579a09a", title: "Widget Overview", icon: null,
+    url: "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001",
+    id: "00000000-0000-4000-8000-000000000001", title: "Widget Overview", icon: null,
     updatedAt: "2026-01-03T00:00:00Z", ...ctx });
   events.push({ type: "list", ts: "2026-01-02T00:00:00Z", url: "https://claude.ai/artifact/newid1",
     id: "newid1", title: "Brand New Card", icon: "🆕", updatedAt: "2026-01-02T00:00:00Z", ...ctx });
   const rows = reduceArtifacts(events, {});
   assert.equal(Object.keys(rows).length, 2);
-  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].updatedAt, "2026-01-03T00:00:00Z");
+  assert.equal(rows["00000000-0000-4000-8000-000000000001"].updatedAt, "2026-01-03T00:00:00Z");
   assert.ok(rows["newid1"]);
   assert.equal(rows["newid1"].title, "Brand New Card");
 });
@@ -145,11 +145,11 @@ test("rule3: list does not lower updatedAt for a known row", () => {
   const p1 = publishLine({ ts: "2026-01-05T00:00:00Z" });
   const events = extractEvents(p1, ctx);
   events.push({ type: "list", ts: "2026-01-01T00:00:00Z",
-    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
-    id: "2cd570bf-705b-4632-afb2-65d4c579a09a", title: "Widget Overview", icon: null,
+    url: "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001",
+    id: "00000000-0000-4000-8000-000000000001", title: "Widget Overview", icon: null,
     updatedAt: "2026-01-01T00:00:00Z", ...ctx });
   const rows = reduceArtifacts(events, {});
-  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].updatedAt, "2026-01-05T00:00:00Z");
+  assert.equal(rows["00000000-0000-4000-8000-000000000001"].updatedAt, "2026-01-05T00:00:00Z");
 });
 
 // Rule 4: aliasing via list with matching title + updatedAt within 15 min
@@ -160,7 +160,7 @@ test("rule4: list with matching title within 15 min of existing row becomes an a
     id: "shortid1", title: "Widget Overview", icon: null, updatedAt: "2026-01-01T00:10:00Z", ...ctx });
   const rows = reduceArtifacts(events, {});
   assert.equal(Object.keys(rows).length, 1);
-  const row = rows["2cd570bf-705b-4632-afb2-65d4c579a09a"];
+  const row = rows["00000000-0000-4000-8000-000000000001"];
   assert.deepEqual(row.aliases, ["https://claude.ai/artifact/shortid1"]);
 });
 
@@ -178,8 +178,8 @@ test("rule5: delete removes the row", () => {
   const p1 = publishLine({ ts: "2026-01-01T00:00:00Z" });
   const events = extractEvents(p1, ctx);
   events.push({ type: "delete", ts: "2026-01-01T02:00:00Z",
-    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
-    id: "2cd570bf-705b-4632-afb2-65d4c579a09a" });
+    url: "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001",
+    id: "00000000-0000-4000-8000-000000000001" });
   const rows = reduceArtifacts(events, {});
   assert.equal(Object.keys(rows).length, 0);
 });
@@ -200,12 +200,12 @@ test("rule5: a publish after a delete recreates the row", () => {
   const p2 = publishLine({ ts: "2026-01-01T03:00:00Z", toolId: "t2", title: "Widget Overview Reborn" });
   const events = extractEvents(p1, ctx);
   events.push({ type: "delete", ts: "2026-01-01T02:00:00Z",
-    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
-    id: "2cd570bf-705b-4632-afb2-65d4c579a09a" });
+    url: "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001",
+    id: "00000000-0000-4000-8000-000000000001" });
   events.push(...extractEvents(p2, ctx));
   const rows = reduceArtifacts(events, {});
   assert.equal(Object.keys(rows).length, 1);
-  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].title, "Widget Overview Reborn");
+  assert.equal(rows["00000000-0000-4000-8000-000000000001"].title, "Widget Overview Reborn");
 });
 
 // Rule 6: prev rows persist unless deleted; thumb always carried over
@@ -228,15 +228,15 @@ test("rule6: prev rows deleted in current events are not kept", () => {
 });
 
 test("rule6: prev[id].thumb is always carried over onto an updated row", () => {
-  const prev = { "2cd570bf-705b-4632-afb2-65d4c579a09a": { id: "2cd570bf-705b-4632-afb2-65d4c579a09a",
-    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a", aliases: [],
+  const prev = { "00000000-0000-4000-8000-000000000001": { id: "00000000-0000-4000-8000-000000000001",
+    url: "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001", aliases: [],
     title: "Widget Overview", description: null, icon: null, project: "widget-lab", cwd: null, file: null,
     version: "v0", updatedAt: "2025-12-01T00:00:00Z", firstSeen: "2025-12-01T00:00:00Z", publishCount: 1,
-    thumb: "thumbs/2cd570bf.png" } };
+    thumb: "thumbs/widget.png" } };
   const p1 = publishLine({ ts: "2026-01-01T00:00:00Z" });
   const rows = reduceArtifacts(extractEvents(p1, ctx), prev);
-  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].thumb, "thumbs/2cd570bf.png");
-  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].version, "v1");
+  assert.equal(rows["00000000-0000-4000-8000-000000000001"].thumb, "thumbs/widget.png");
+  assert.equal(rows["00000000-0000-4000-8000-000000000001"].version, "v1");
 });
 
 // Rule 6 + rule 4 interaction: a list event for a URL that is only known as an
@@ -293,9 +293,9 @@ test("fix2/2: publishCount does not grow when reduceArtifacts is run twice on th
   const p2 = publishLine({ ts: "2026-01-01T01:00:00Z", toolId: "t2" });
   const events = extractEvents([...p1, ...p2], ctx);
   const rowsA = reduceArtifacts(events, {});
-  assert.equal(rowsA["2cd570bf-705b-4632-afb2-65d4c579a09a"].publishCount, 2);
+  assert.equal(rowsA["00000000-0000-4000-8000-000000000001"].publishCount, 2);
   const rowsB = reduceArtifacts(events, rowsA);
-  assert.equal(rowsB["2cd570bf-705b-4632-afb2-65d4c579a09a"].publishCount, 2);
+  assert.equal(rowsB["00000000-0000-4000-8000-000000000001"].publishCount, 2);
 });
 
 test("fix2/2: publishCount keeps prev's higher count when this run only has fewer publish events (pruned transcript)", () => {
@@ -317,22 +317,22 @@ test("fix2/3b: a list event's ms-precision updatedAt is recognized as newer than
   const p1 = publishLine({ ts: "2026-01-01T00:00:00Z" });
   const events = extractEvents(p1, ctx);
   events.push({ type: "list", ts: "2026-01-01T00:00:20Z",
-    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
-    id: "2cd570bf-705b-4632-afb2-65d4c579a09a", title: "Widget Overview", icon: null,
+    url: "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001",
+    id: "00000000-0000-4000-8000-000000000001", title: "Widget Overview", icon: null,
     updatedAt: "2026-01-01T00:00:11.413Z", ...ctx });
   const rows = reduceArtifacts(events, {});
-  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].updatedAt, "2026-01-01T00:00:11.413Z");
+  assert.equal(rows["00000000-0000-4000-8000-000000000001"].updatedAt, "2026-01-01T00:00:11.413Z");
 });
 
 test("fix2/3b: a whole-second updatedAt never downgrades a more precise, later ms-precision one", () => {
   const p1 = publishLine({ ts: "2026-01-01T00:00:11.413Z" });
   const events = extractEvents(p1, ctx);
   events.push({ type: "list", ts: "2026-01-01T00:00:20Z",
-    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
-    id: "2cd570bf-705b-4632-afb2-65d4c579a09a", title: "Widget Overview", icon: null,
+    url: "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001",
+    id: "00000000-0000-4000-8000-000000000001", title: "Widget Overview", icon: null,
     updatedAt: "2026-01-01T00:00:11Z", ...ctx });
   const rows = reduceArtifacts(events, {});
-  assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].updatedAt, "2026-01-01T00:00:11.413Z");
+  assert.equal(rows["00000000-0000-4000-8000-000000000001"].updatedAt, "2026-01-01T00:00:11.413Z");
 });
 
 // Fix round 3: publish(t1) -> delete -> publish(t2) in one run must not count the
@@ -343,11 +343,11 @@ test("fix3: publish, then delete, then publish again in one run gives publishCou
   const p2 = publishLine({ ts: "2026-01-01T02:00:00Z", toolId: "t2", description: "Desc after delete", icon: "🌱" });
   const events = extractEvents(p1, ctx);
   events.push({ type: "delete", ts: "2026-01-01T01:00:00Z",
-    url: "https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a",
-    id: "2cd570bf-705b-4632-afb2-65d4c579a09a" });
+    url: "https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001",
+    id: "00000000-0000-4000-8000-000000000001" });
   events.push(...extractEvents(p2, ctx));
   const rows = reduceArtifacts(events, {});
-  const row = rows["2cd570bf-705b-4632-afb2-65d4c579a09a"];
+  const row = rows["00000000-0000-4000-8000-000000000001"];
   assert.equal(row.publishCount, 1);
   assert.equal(row.description, "Desc after delete");
   assert.equal(row.icon, "🌱");

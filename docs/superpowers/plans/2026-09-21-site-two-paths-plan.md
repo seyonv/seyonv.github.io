@@ -427,7 +427,7 @@ Rules, all tested:
 
 - [ ] **Step 1: Write the failing tests.** Fixture lines copy the real shapes, e.g.
   `{"type":"assistant","timestamp":"…","cwd":"/r/poker","message":{"content":[{"type":"tool_use","id":"t1","name":"Artifact","input":{"file_path":"/r/p.html","description":"D","favicon":"🃏"}}]}}` and
-  `{"type":"user","timestamp":"…","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"Published …"}]},"toolUseResult":{"url":"https://claude.ai/code/artifact/2cd570bf-705b-4632-afb2-65d4c579a09a","artifact_id":"2cd5…","title":"Master Plan","version":"v1","path":"/r/p.html"}}`.
+  `{"type":"user","timestamp":"…","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"Published …"}]},"toolUseResult":{"url":"https://claude.ai/code/artifact/00000000-0000-4000-8000-000000000001","artifact_id":"0000…","title":"Widget Plan","version":"v1","path":"/r/p.html"}}`.
   Write one test per rule 1–7, plus:
   - a failed publish (`is_error: true`) is ignored
   - a `read` action is ignored
@@ -529,7 +529,7 @@ export function reduceArtifacts(events, prev = {}) {
   - Expected: roughly 95–106 total. The exact number depends on aliasing.
   - Cross-check against `<scratchpad>/artifacts-found.json` with a one-off `node -e`: every non-deleted URL there
     should be either a row id or an alias in STATE.
-  - `"Asinus pokerensis — Story Plan"` should be absent.
+  - `"(the deleted artifact)"` should be absent.
   - Run a second time. Expected: `+0 new, ~0 updated`.
 - [ ] **Step 3:** Commit. State is outside the repo, so only the scripts are committed.
 
@@ -557,8 +557,8 @@ export function reduceArtifacts(events, prev = {}) {
   - `blobName` is stable for the same key and id, and differs across keys.
   - The Node-sealed blob decrypts with `globalThis.crypto.subtle` (the WebCrypto path the browser uses). This
     proves the byte layout.
-  - A leak check: seal a manifest containing the title `"Blackbird / Flycar — Interview Reference"` and assert
-    that no `.enc` output contains `"Blackbird"` as bytes.
+  - A leak check: seal a manifest containing the title `"Zebra Quartz — Private Notes"` and assert
+    that no `.enc` output contains `"Zebra"` as bytes.
 - [ ] **Step 2:** Run `node --test test/`. Expected: FAIL.
 - [ ] **Step 3: Implement `lib/seal.mjs`**
 
