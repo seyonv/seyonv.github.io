@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // Captures a 640px JPEG thumbnail per artifact into THUMBS (outside the repo)
-// and records row.thumb = {ver, kind, at} in STATE.
+// and records row.thumb = {ver, kind, at} in STATE. Source: the local file,
+// else a saved published page in PAGES/<id>/index.html, else the hosted URL.
 // Flags: --only <id>, --force, --no-remote.
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { STATE, STATE_DIR, THUMBS, REPO } from "./lib/paths.mjs";
-import { needsCapture, thumbVer } from "./lib/thumbs.mjs";
+import { STATE, STATE_DIR, THUMBS, PAGES, REPO } from "./lib/paths.mjs";
+import { needsCapture, pickSource, thumbVer } from "./lib/thumbs.mjs";
 
 const B = join(homedir(), ".claude", "skills", "gstack", "browse", "dist", "browse");
 const args = process.argv.slice(2);
@@ -34,14 +35,14 @@ function freePort() {
   });
 }
 
-async function captureLocal(row, png) {
+async function captureFile(file, png) {
   const port = await freePort();
   // Plain `python3 -m http.server` sends no charset, so pages without a <meta charset> render as mojibake.
   const py = "import http.server as h,sys;H=h.SimpleHTTPRequestHandler;"
     + "H.extensions_map['.html']='text/html; charset=utf-8';h.test(HandlerClass=H,port=int(sys.argv[1]),bind='127.0.0.1')";
-  const server = spawn("python3", ["-c", py, String(port)], { cwd: dirname(row.file), stdio: "ignore" });
+  const server = spawn("python3", ["-c", py, String(port)], { cwd: dirname(file), stdio: "ignore" });
   try {
-    const url = `http://127.0.0.1:${port}/${encodeURIComponent(basename(row.file))}`;
+    const url = `http://127.0.0.1:${port}/${encodeURIComponent(basename(file))}`;
     for (let i = 0; i < 50; i++) {
       try { if ((await fetch(url)).ok) break; } catch {}
       await sleep(100);
@@ -96,7 +97,7 @@ async function main() {
   mkdirSync(THUMBS, { recursive: true });
   // browse only writes screenshots under /private/tmp or the repo; never the repo.
   const tmp = mkdtempSync("/private/tmp/seyonv-thumbs-");
-  const counts = { local: 0, remote: 0, placeholder: 0, kept: 0 };
+  const counts = { local: 0, snapshot: 0, remote: 0, placeholder: 0, kept: 0 };
   let remoteOk = !noRemote;
 
   try {
@@ -107,11 +108,12 @@ async function main() {
       const png = join(tmp, `${row.id}.png`);
       let kind = "placeholder";
       try {
-        if (row.file && existsSync(row.file)) {
-          await captureLocal(row, png);
+        const src = pickSource(row, { pagesDir: PAGES, exists: existsSync });
+        if (src?.file) {
+          await captureFile(src.file, png);
           jpeg(png, row.id);
-          kind = "local";
-        } else if (remoteOk && row.url) {
+          kind = src.kind;
+        } else if (src?.kind === "remote" && remoteOk) {
           if (await captureRemote(row, png)) {
             jpeg(png, row.id);
             kind = "remote";
@@ -131,7 +133,7 @@ async function main() {
     rmSync(tmp, { recursive: true, force: true });
   }
 
-  console.log(`thumbs: ${counts.local} local, ${counts.remote} remote, ${counts.placeholder} placeholder, ${counts.kept} kept`);
+  console.log(`thumbs: ${counts.local} local, ${counts.snapshot} snapshot, ${counts.remote} remote, ${counts.placeholder} placeholder, ${counts.kept} kept`);
 }
 
 main().catch((err) => {
