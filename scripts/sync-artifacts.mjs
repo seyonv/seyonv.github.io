@@ -24,18 +24,18 @@ function isDir(p) {
 function findTranscriptFiles() {
   const files = [];
   if (!isDir(PROJECTS_DIR)) return files;
-  for (const projectDirName of readdirSync(PROJECTS_DIR)) {
+  for (const projectDirName of readdirSync(PROJECTS_DIR).sort()) {
     const projectDir = join(PROJECTS_DIR, projectDirName);
     if (!isDir(projectDir)) continue;
     const project = deriveProject(projectDirName);
-    for (const entry of readdirSync(projectDir)) {
+    for (const entry of readdirSync(projectDir).sort()) {
       const entryPath = join(projectDir, entry);
       if (entry.endsWith(".jsonl") && !isDir(entryPath)) {
         files.push({ path: entryPath, project, session: entry.slice(0, -".jsonl".length) });
       } else if (isDir(entryPath)) {
         const subagentsDir = join(entryPath, "subagents");
         if (!isDir(subagentsDir)) continue;
-        for (const subFile of readdirSync(subagentsDir)) {
+        for (const subFile of readdirSync(subagentsDir).sort()) {
           if (!subFile.endsWith(".jsonl")) continue;
           files.push({ path: join(subagentsDir, subFile), project, session: subFile.slice(0, -".jsonl".length) });
         }

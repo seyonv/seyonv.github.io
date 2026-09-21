@@ -219,6 +219,36 @@ test("rule6: prev[id].thumb is always carried over onto an updated row", () => {
   assert.equal(rows["2cd570bf-705b-4632-afb2-65d4c579a09a"].version, "v1");
 });
 
+// Rule 6 + rule 4 interaction: a list event for a URL that is only known as an
+// alias from a *previous* run's state must resolve to the canonical prev row,
+// not become its own row (which would also re-restore the stale canonical row
+// via the prev carry-over, producing a duplicate).
+test("rule6/4: list on a prior-run alias url merges into the canonical prev row, not a duplicate", () => {
+  const prev = {
+    "uuid1": { id: "uuid1", url: "https://claude.ai/code/artifact/uuid1", aliases: ["https://claude.ai/artifact/short1"],
+      title: "Widget Overview", description: "Old desc", icon: "🃏", project: "widget-lab", cwd: "/r/widget-lab",
+      file: "/r/p.html", version: "v1", updatedAt: "2026-01-01T00:00:00Z", firstSeen: "2026-01-01T00:00:00Z", publishCount: 1 },
+  };
+  const events = [{ type: "list", ts: "2026-01-05T00:00:00Z", url: "https://claude.ai/artifact/short1", id: "short1",
+    title: "Widget Overview", icon: null, updatedAt: "2026-01-05T00:00:00Z", ...ctx }];
+  const rows = reduceArtifacts(events, prev);
+  assert.equal(Object.keys(rows).length, 1);
+  assert.ok(rows["uuid1"]);
+  assert.equal(rows["uuid1"].updatedAt, "2026-01-05T00:00:00Z");
+  assert.deepEqual(rows["uuid1"].aliases, ["https://claude.ai/artifact/short1"]);
+});
+
+test("rule6/5: delete via a prior-run alias url removes the canonical prev row", () => {
+  const prev = {
+    "uuid2": { id: "uuid2", url: "https://claude.ai/code/artifact/uuid2", aliases: ["https://claude.ai/artifact/short2"],
+      title: "Widget Overview 2", description: null, icon: null, project: "widget-lab", cwd: null,
+      file: null, version: "v1", updatedAt: "2026-01-01T00:00:00Z", firstSeen: "2026-01-01T00:00:00Z", publishCount: 1 },
+  };
+  const events = [{ type: "delete", ts: "2026-01-05T00:00:00Z", url: "https://claude.ai/artifact/short2", id: "short2" }];
+  const rows = reduceArtifacts(events, prev);
+  assert.equal(Object.keys(rows).length, 0);
+});
+
 // Rule 7: deterministic output
 test("rule7: running the reduction twice on the same input gives equal JSON", () => {
   const p1 = publishLine({ ts: "2026-01-01T00:00:00Z" });
