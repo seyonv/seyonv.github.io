@@ -4,83 +4,84 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Seyon Vasantharajan</title>
+<meta name="description" content="Visual explainers on technical concepts and papers, and a private gallery of things built along the way.">
 <style>
-  :root {
-    --bg: #fbfbf9;
-    --surface: #f4f4f1;
-    --border: #dedcd6;
-    --text: #1c1f23;
-    --muted: #6b7068;
-    --accent: #4a9d77;
+:root{
+  --bg:#fbfbf9; --surface:#f4f4f1; --surface2:#ecece8; --border:#dedcd6;
+  --text:#1c1f23; --muted:#6b7068; --faint:#b9b9b3;
+  --accent:#4a9d77; --accent-bg:#dcefdf; --accent-border:#8cc79c;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15171a; --surface:#1d2024; --surface2:#24282d; --border:#32373d;
+    --text:#e6e8ea; --muted:#9aa1a9; --faint:#4a5057;
+    --accent:#5fb37f; --accent-bg:#1c2b22; --accent-border:#3f7a55;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #15171a;
-      --surface: #1d2024;
-      --border: #32373d;
-      --text: #e6e8ea;
-      --muted: #9aa1a9;
-      --accent: #5fb37f;
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    padding: 24px;
-  }
-  main {
-    width: 100%;
-    max-width: 360px;
-    text-align: center;
-  }
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 8px;
-  }
-  p.tagline {
-    color: var(--muted);
-    margin: 0 0 28px;
-    font-size: 0.95rem;
-  }
-  a.card {
-    display: block;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    text-decoration: none;
-    color: var(--text);
-    transition: border-color 0.15s ease;
-  }
-  a.card:hover {
-    border-color: var(--accent);
-  }
-  a.card .label {
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  a.card .desc {
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;background:var(--bg);color:var(--text);font-family:-apple-system,"Inter",system-ui,sans-serif;line-height:1.45}
+.wrap{width:100%;max-width:760px;margin:0 auto;padding:48px 24px}
+h1{font-size:30px;font-weight:600;margin:0 0 6px;letter-spacing:-0.015em}
+.sub{font-size:15px;color:var(--muted);margin:0 0 28px}
+.doors{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.door{display:flex;flex-direction:column;gap:8px;min-height:210px;padding:22px 22px 20px;color:inherit;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;transition:border-color .15s,transform .15s}
+.door:hover,.door:focus-visible{border-color:var(--accent-border);transform:translateY(-2px);outline:none}
+.door .icon{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px;background:var(--surface2);margin-bottom:6px}
+.door b{font-size:20px;font-weight:600;letter-spacing:-0.01em}
+.door b .arr{color:var(--faint);margin-left:6px;transition:color .15s}
+.door:hover b .arr{color:var(--accent)}
+.door p{margin:0;font-size:14px;color:var(--muted)}
+.door .note{margin-top:auto;padding-top:10px;font-size:12px;color:var(--muted)}
+.door .note:empty{display:none}
+.door .note.on{color:var(--accent)}
+@media (max-width:600px){
+  body{align-items:flex-start}
+  .wrap{padding:40px 16px}
+  .doors{grid-template-columns:1fr}
+  .door{min-height:0}
+}
 </style>
 </head>
 <body>
-<main>
+<main class="wrap">
   <h1>Seyon Vasantharajan</h1>
-  <p class="tagline">Building things and writing them down.</p>
-  <a class="card" href="/explainers/">
-    <div class="label">Explainers &rarr;</div>
-    <div class="desc">Visual notes on ideas worth understanding</div>
-  </a>
+  <p class="sub">Building things and writing them down.</p>
+  <div class="doors">
+    <a class="door" href="/explainers/">
+      <span class="icon" aria-hidden="true">📐</span>
+      <b>Explainers<span class="arr">→</span></b>
+      <p>Visual notes cards on technical concepts and papers</p>
+      <span class="note" id="exCount"></span>
+    </a>
+    <a class="door" href="/artifacts/">
+      <span class="icon" aria-hidden="true">🗂️</span>
+      <b>Artifacts<span class="arr">→</span></b>
+      <p>Pages Claude has built with me</p>
+      <span class="note" id="artState">🔒 Private</span>
+    </a>
+  </div>
 </main>
+<script>
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+fetch("/explainers/hub.json")
+  .then(r => r.ok ? r.json() : null)
+  .then(h => {
+    if (!h) return;
+    const parts = [];
+    if (h.explainers) parts.push(plural(h.explainers, "explainer"));
+    if (h.papers) parts.push(plural(h.papers, "paper"));
+    if (h.cards) parts.push(plural(h.cards, "card"));
+    document.getElementById("exCount").textContent = parts.join(" · ");
+  })
+  .catch(() => {});
+
+let unlocked = false;
+try { unlocked = !!localStorage.getItem("seyonv-artifacts-key"); } catch {}
+if (unlocked) {
+  const s = document.getElementById("artState");
+  s.textContent = "🔓 Unlocked on this browser";
+  s.classList.add("on");
+}
+</script>
 </body>
 </html>

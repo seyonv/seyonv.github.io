@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Artifacts</title>
+<style>
+:root{
+  --bg:#fbfbf9; --surface:#f4f4f1; --surface2:#ecece8; --border:#dedcd6;
+  --text:#1c1f23; --muted:#6b7068; --faint:#b9b9b3;
+  --accent:#4a9d77; --accent-bg:#dcefdf; --accent-border:#8cc79c;
+  --danger:#b4533f;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15171a; --surface:#1d2024; --surface2:#24282d; --border:#32373d;
+    --text:#e6e8ea; --muted:#9aa1a9; --faint:#4a5057;
+    --accent:#5fb37f; --accent-bg:#1c2b22; --accent-border:#3f7a55;
+    --danger:#e08a74;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Inter",system-ui,sans-serif;line-height:1.45}
+.wrap{max-width:1160px;margin:0 auto;padding:36px 24px 56px}
+.back{display:inline-block;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:14px}
+.back:hover{color:var(--text)}
+h1{font-size:30px;font-weight:600;margin:0 0 6px;letter-spacing:-0.015em}
+.sub{font-size:15px;color:var(--muted);margin:0 0 22px;max-width:680px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.btn{font:inherit;font-size:13px;padding:6px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer}
+.btn:hover{color:var(--text);border-color:var(--faint)}
+.btn.primary{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent);font-weight:600}
+.btn.primary:hover{border-color:var(--accent)}
+.bar{display:flex;flex-wrap:wrap;gap:12px 10px;align-items:center;margin-bottom:22px}
+.bar input,.bar select,.lock input{font:inherit;font-size:15px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);outline:none}
+.bar input{flex:1;min-width:220px;max-width:420px}
+.bar select{font-size:13px;padding:6px 10px;margin-left:auto;cursor:pointer}
+.bar input:focus,.bar select:focus,.lock input:focus{border-color:var(--accent-border)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;flex-basis:100%;order:1}
+.chip{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap}
+.chip .n{color:var(--faint);margin-left:5px;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent);font-weight:600}
+.chip[aria-pressed="true"] .n{color:var(--accent);font-weight:400}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.tile{display:flex;flex-direction:column;min-width:0;color:inherit;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .15s,transform .15s}
+.tile:hover,.tile:focus-visible{border-color:var(--accent-border);transform:translateY(-2px);outline:none}
+.thumb{position:relative;aspect-ratio:16/10;overflow:hidden;background:var(--surface2);border-bottom:1px solid var(--border)}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:0;transition:opacity .25s}
+.thumb img.on{opacity:1}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 28px;text-align:center}
+.ph .e{font-size:48px;line-height:1}
+.ph span:last-child{font-size:13px;color:var(--muted);max-width:30ch;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{padding:13px 15px 15px;display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.meta b{font-size:16px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta b .e{margin-right:6px}
+.meta p:empty{display:none}
+.meta p{margin:0;font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tags{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:12px;color:var(--muted);margin-top:auto;padding-top:6px}
+.badge{padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{color:var(--muted);font-size:14px;padding:30px 0}
+.empty button{margin-left:8px}
+.status{color:var(--muted);font-size:14px;padding:40px 0}
+.lock{max-width:380px;margin:12vh auto 0;text-align:center}
+.lock .icon{font-size:40px;line-height:1;margin-bottom:14px}
+.lock h1{font-size:24px}
+.lock .sub{margin:0 auto 22px}
+.lock form{display:flex;gap:8px}
+.lock input{flex:1;min-width:0;font-size:14px}
+.lock .err{color:var(--danger);font-size:13px;margin:12px 0 0}
+.lock .back{margin:28px 0 0}
+.foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+@media (max-width:600px){
+  .wrap{padding:28px 16px 48px}
+  .grid{grid-template-columns:1fr}
+  .bar input{min-width:0;max-width:none}
+  .chips{flex-wrap:nowrap;overflow-x:auto;flex-basis:calc(100% + 32px);margin:0 -16px;padding:0 16px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<section class="lock" id="lock" hidden>
+  <div class="icon" aria-hidden="true">🔒</div>
+  <h1>Private gallery</h1>
+  <p class="sub">Paste the key (or the whole unlock link) to open it on this browser.</p>
+  <form id="unlock">
+    <input id="key" type="password" placeholder="Paste key…" aria-label="Key" autocomplete="off" spellcheck="false">
+    <button class="btn primary" type="submit">Unlock</button>
+  </form>
+  <p class="err" id="err" hidden></p>
+  <a class="back" href="/">← seyonv.github.io</a>
+</section>
+
+<p class="status" id="status" hidden>Decrypting…</p>
+
+<section id="app" hidden>
+  <a class="back" href="/">← seyonv.github.io</a>
+  <div class="head">
+    <div>
+      <h1>Artifacts</h1>
+      <p class="sub" id="count"></p>
+    </div>
+    <button class="btn" id="lockBtn" type="button">Lock this browser</button>
+  </div>
+  <div class="bar">
+    <input id="q" type="search" placeholder="Search artifacts…" aria-label="Search artifacts">
+    <div class="chips" id="chips"></div>
+    <select id="sort" aria-label="Sort">
+      <option value="new">Newest</option>
+      <option value="edits">Most edited</option>
+    </select>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty" hidden></p>
+  <p class="foot">Pages Claude has built with me. Decrypted in this browser; the data on the server is encrypted.</p>
+</section>
+
+</main>
+<script>
+const STORE = "seyonv-artifacts-key";
+const $ = id => document.getElementById(id);
+const WORD_ICONS = { catalogue: "📚", map: "🗺️", report: "📋", roadmap: "🧭", ladder: "🪜", chart: "📊", calendar: "📅", code: "💻", recipe: "🍳", game: "🎮", notes: "🗒️", doc: "📄", dashboard: "📊" };
+const iconOf = i => !i ? "📄" : /^[a-z]+$/i.test(i) ? (WORD_ICONS[i.toLowerCase()] || "📄") : i;
+const projectOf = p => (p || "other").replace(/^-Users-[^-]+-(?:dev-|Desktop-repos-)?/, "");
+const fmt = d => new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+
+function readKey() {
+  try { return localStorage.getItem(STORE); } catch { return null; }
+}
+function writeKey(k) {
+  try { k ? localStorage.setItem(STORE, k) : localStorage.removeItem(STORE); } catch {}
+}
+function keyBytes(s) {
+  const b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(b64 + "=".repeat((4 - b64.length % 4) % 4));
+  return Uint8Array.from(bin, c => c.charCodeAt(0));
+}
+async function openBlob(key, path) {
+  const res = await fetch(path, { cache: "no-cache" });
+  if (!res.ok) throw new Error("fetch " + res.status);
+  const buf = await res.arrayBuffer();
+  return crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, key, buf.slice(12));
+}
+
+function showLock(msg) {
+  $("app").hidden = true; $("status").hidden = true; $("lock").hidden = false;
+  $("err").textContent = msg || ""; $("err").hidden = !msg;
+}
+
+async function start() {
+  const k = readKey();
+  if (!k) return showLock();
+  $("lock").hidden = true; $("status").hidden = false;
+  let key;
+  try {
+    key = await crypto.subtle.importKey("raw", keyBytes(k), "AES-GCM", false, ["decrypt"]);
+  } catch {
+    writeKey(null);
+    return showLock("That key didn't work.");
+  }
+  let res;
+  try {
+    res = await fetch("data/manifest.enc", { cache: "no-cache" });
+    if (!res.ok) throw new Error("fetch " + res.status);
+  } catch {
+    $("status").textContent = "Couldn't load the gallery data. Try reloading.";
+    return;
+  }
+  let manifest;
+  try {
+    const buf = await res.arrayBuffer();
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, key, buf.slice(12));
+    manifest = JSON.parse(new TextDecoder().decode(plain));
+  } catch {
+    writeKey(null);
+    return showLock("That key didn't work.");
+  }
+  render(manifest.artifacts || [], key);
+}
+
+// Thumbnails: decrypted lazily as tiles scroll near the viewport, at most 6 fetches at once.
+const queue = [];
+let active = 0;
+function pump(key) {
+  while (active < 6 && queue.length) {
+    const { img, thumb } = queue.shift();
+    active++;
+    openBlob(key, "data/" + thumb + ".enc")
+      .then(plain => {
+        img.onload = () => img.classList.add("on");
+        img.src = URL.createObjectURL(new Blob([plain], { type: "image/jpeg" }));
+      })
+      .catch(() => img.remove())
+      .finally(() => { active--; pump(key); });
+  }
+}
+
+function render(items, key) {
+  $("status").hidden = true; $("app").hidden = false;
+  $("count").textContent = `${items.length} artifact${items.length === 1 ? "" : "s"} · private`;
+
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      io.unobserve(e.target);
+      queue.push({ img: e.target.querySelector("img"), thumb: e.target.dataset.thumb });
+    }
+    pump(key);
+  }, { rootMargin: "300px 0px" });
+
+  const tiles = items.map(a => {
+    const icon = iconOf(a.icon), project = projectOf(a.project), edits = a.publishCount || 0;
+    const t = document.createElement("a");
+    t.className = "tile";
+    t.href = /^https:\/\//.test(a.url) ? a.url : "#";
+    t.target = "_blank"; t.rel = "noopener";
+    t.innerHTML = `<div class="thumb"><div class="ph" aria-hidden="true"><span class="e"></span><span></span></div></div>
+      <div class="meta"><b><span class="e" aria-hidden="true"></span><span></span></b><p></p>
+      <div class="tags"><span class="badge"></span><span></span>${edits > 1 ? `<span>${edits} edits</span>` : ""}</div></div>`;
+    const [phIcon, phTitle] = t.querySelectorAll(".ph span");
+    phIcon.textContent = icon; phTitle.textContent = a.title || "Untitled";
+    const [bIcon, bTitle] = t.querySelectorAll("b span");
+    bIcon.textContent = icon; bTitle.textContent = a.title || "Untitled";
+    t.querySelector("p").textContent = a.description || "";
+    t.querySelector(".badge").textContent = project;
+    t.querySelector(".tags span:nth-child(2)").textContent = a.updatedAt ? fmt(a.updatedAt) : "";
+    if (a.thumb) {
+      const th = t.querySelector(".thumb");
+      const img = document.createElement("img");
+      img.alt = ""; img.decoding = "async";
+      th.append(img); th.dataset.thumb = a.thumb;
+      io.observe(th);
+    }
+    return { el: t, a, project, edits, search: [a.title, a.description, project].join(" ").toLowerCase() };
+  });
+
+  const counts = {};
+  for (const t of tiles) counts[t.project] = (counts[t.project] || 0) + 1;
+  const top = Object.entries(counts).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).slice(0, 8);
+  let project = "all";
+  for (const [name, n] of [["all", items.length], ...top]) {
+    const c = document.createElement("button");
+    c.className = "chip"; c.type = "button"; c.dataset.p = name;
+    c.setAttribute("aria-pressed", name === "all");
+    c.textContent = name === "all" ? "All" : name;
+    const s = document.createElement("span"); s.className = "n"; s.textContent = n;
+    c.append(s);
+    c.addEventListener("click", () => {
+      project = name;
+      for (const x of $("chips").children) x.setAttribute("aria-pressed", x === c);
+      update();
+    });
+    $("chips").append(c);
+  }
+
+  function update() {
+    const q = $("q").value.trim().toLowerCase();
+    const byEdits = $("sort").value === "edits";
+    const shown = tiles
+      .filter(t => (project === "all" || t.project === project) && (!q || t.search.includes(q)))
+      .sort((x, y) => (byEdits ? y.edits - x.edits : 0) || (y.a.updatedAt || "").localeCompare(x.a.updatedAt || ""));
+    $("grid").replaceChildren(...shown.map(t => t.el));
+    const empty = $("empty");
+    empty.hidden = shown.length > 0;
+    if (!shown.length) {
+      empty.textContent = items.length ? "No artifacts match." : "No artifacts yet.";
+      if (items.length) {
+        const b = document.createElement("button");
+        b.className = "btn"; b.type = "button"; b.textContent = "Clear filters";
+        b.addEventListener("click", () => { $("q").value = ""; $("chips").firstChild.click(); });
+        empty.append(b);
+      }
+    }
+  }
+  $("q").addEventListener("input", update);
+  $("sort").addEventListener("change", update);
+  update();
+}
+
+$("lockBtn").addEventListener("click", () => {
+  writeKey(null);
+  location.reload();
+});
+$("unlock").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("key").value.trim();
+  const k = v.includes("#k=") ? v.split("#k=")[1] : v;
+  if (!/^[A-Za-z0-9_-]{16,}={0,2}$/.test(k)) return showLock("That key didn't work.");
+  writeKey(k.replace(/=+$/, ""));
+  $("key").value = "";
+  start();
+});
+
+function takeHashKey() {
+  if (!location.hash.startsWith("#k=")) return false;
+  writeKey(location.hash.slice(3));
+  history.replaceState(null, "", location.pathname + location.search);
+  return true;
+}
+// Opening the unlock link while already on this page is a same-document
+// navigation, so the page doesn't reload by itself.
+addEventListener("hashchange", () => { if (takeHashKey()) location.reload(); });
+takeHashKey();
+start();
+</script>
+</body>
+</html>
