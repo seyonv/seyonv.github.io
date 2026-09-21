@@ -1,8 +1,7 @@
 import { randomBytes, createCipheriv, createDecipheriv, createHmac } from "node:crypto";
-import { mkdir, readdir, readFile, rm, writeFile, chmod } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile, chmod, stat, rename } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { createHash } from "node:crypto";
 
 export const newKey = () => randomBytes(32);
 export const b64url = (b) => Buffer.from(b).toString("base64url");
@@ -21,19 +20,35 @@ export function openBytes(key, blob) {
 
 export const blobName = (key, id) => createHmac("sha256", key).update(id).digest("hex").slice(0, 24);
 
-const sha256hex = (buf) => createHash("sha256").update(buf).digest("hex");
+// Keyed hash used to decide whether a plaintext needs re-sealing. Keying it on
+// `key` (not a plain sha256) means a changed key always invalidates the cache
+// — a lost/regenerated key file forces every .enc to be rewritten, instead of
+// silently leaving ciphertext the new key can't open.
+const keyedHash = (key, buf) => createHmac("sha256", key).update(buf).digest("hex");
+
+// Writes the key atomically: parent dir mode 700, key file mode 600, via a
+// tmp-file-then-rename so a crash never leaves a partially-written key.
+export async function writeKey(keyPath, key) {
+  const dir = dirname(keyPath);
+  await mkdir(dir, { recursive: true, mode: 0o700 });
+  await chmod(dir, 0o700);
+  const tmp = `${keyPath}.tmp-${process.pid}-${Date.now()}`;
+  await writeFile(tmp, b64url(key), { mode: 0o600 });
+  await chmod(tmp, 0o600);
+  await rename(tmp, keyPath);
+}
 
 // Load the key from `keyPath`, creating a fresh one (mode 600, parent dir mode 700)
-// if missing. Returns the raw 32-byte key Buffer.
+// if missing. Tightens permissions on an existing key file if they're too loose.
+// Returns the raw 32-byte key Buffer.
 export async function loadOrCreateKey(keyPath) {
   if (existsSync(keyPath)) {
+    const st = await stat(keyPath);
+    if (st.mode & 0o077) await chmod(keyPath, 0o600);
     return fromB64url((await readFile(keyPath, "utf8")).trim());
   }
   const key = newKey();
-  await mkdir(dirname(keyPath), { recursive: true, mode: 0o700 });
-  await writeFile(keyPath, b64url(key), { mode: 0o600 });
-  await chmod(dirname(keyPath), 0o700);
-  await chmod(keyPath, 0o600);
+  await writeKey(keyPath, key);
   return key;
 }
 
@@ -44,7 +59,7 @@ export async function buildManifest({ state, thumbsDir, key }) {
   if (thumbsDir && existsSync(thumbsDir)) {
     for (const f of await readdir(thumbsDir)) {
       const m = f.match(/^(.+)\.jpg$/);
-      if (m) hasThumb.add(m[1]);
+      if (m && state[m[1]]) hasThumb.add(m[1]);
     }
   }
   const rows = Object.values(state).map((r) => ({
@@ -64,7 +79,7 @@ export async function buildManifest({ state, thumbsDir, key }) {
 }
 
 // Seals everything (manifest + thumbnails) into `outDir`, using `sealedPath` to
-// track plaintext hashes for idempotence, and removing stale .enc files.
+// track key-bound plaintext hashes for idempotence, and removing stale .enc files.
 // Returns { written, unchanged, removed }.
 export async function sealAll({ state, thumbsDir, outDir, sealedPath, key }) {
   await mkdir(outDir, { recursive: true });
@@ -78,7 +93,7 @@ export async function sealAll({ state, thumbsDir, outDir, sealedPath, key }) {
   let written = 0, unchanged = 0;
 
   const sealOne = async (name, plain) => {
-    const hash = sha256hex(plain);
+    const hash = keyedHash(key, plain);
     const outPath = join(outDir, name);
     produced.add(name);
     if (sealed[name] === hash && existsSync(outPath)) {
@@ -99,6 +114,7 @@ export async function sealAll({ state, thumbsDir, outDir, sealedPath, key }) {
       const m = f.match(/^(.+)\.jpg$/);
       if (!m) continue;
       const id = m[1];
+      if (!state[id]) continue; // skip orphaned thumbnails with no matching row
       const plain = await readFile(join(thumbsDir, f));
       await sealOne(`${blobName(key, id)}.enc`, plain);
     }

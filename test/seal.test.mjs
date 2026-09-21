@@ -4,7 +4,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  newKey, sealBytes, openBytes, blobName, b64url, fromB64url, sealAll,
+  newKey, sealBytes, openBytes, blobName, b64url, fromB64url, sealAll, writeKey, loadOrCreateKey,
 } from "../scripts/lib/seal.mjs";
 
 test("sealBytes then openBytes round-trips", () => {
@@ -129,6 +129,108 @@ test("sealAll removes stale .enc files no longer produced", async () => {
     assert.equal(second.removed, 1);
     const filesAfterSecond = await readdir(outDir);
     assert.equal(filesAfterSecond.length, 1);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("sealAll skips orphaned thumbnails with no matching state row", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "seal-orphan-"));
+  try {
+    const key = newKey();
+    const outDir = join(dir, "data");
+    const sealedPath = join(dir, "sealed.json");
+    const thumbsDir = join(dir, "thumbs");
+    await mkdir(thumbsDir, { recursive: true });
+    await writeFile(join(thumbsDir, "a.jpg"), Buffer.from("known row"));
+    await writeFile(join(thumbsDir, "ghost.jpg"), Buffer.from("orphaned row"));
+
+    const state = {
+      a: { id: "a", url: "u", title: "T", description: "D", icon: "x", project: "p",
+        updatedAt: "2026-01-01T00:00:00Z", publishCount: 1 },
+    };
+
+    const { written } = await sealAll({ state, thumbsDir, outDir, sealedPath, key });
+    assert.equal(written, 2); // manifest + a.jpg only, ghost.jpg skipped
+    const files = await readdir(outDir);
+    assert.equal(files.length, 2);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("changing the key without --rotate still forces a re-seal (SEALED is key-bound), and the new key opens both manifest and thumb blobs", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "seal-rekey-"));
+  try {
+    const key1 = newKey();
+    const outDir = join(dir, "data");
+    const sealedPath = join(dir, "sealed.json");
+    const thumbsDir = join(dir, "thumbs");
+    await mkdir(thumbsDir, { recursive: true });
+    await writeFile(join(thumbsDir, "a.jpg"), Buffer.from("thumb bytes"));
+
+    const state = {
+      a: { id: "a", url: "u", title: "T", description: "D", icon: "x", project: "p",
+        updatedAt: "2026-01-01T00:00:00Z", publishCount: 1 },
+    };
+
+    const first = await sealAll({ state, thumbsDir, outDir, sealedPath, key: key1 });
+    assert.equal(first.written, 2);
+
+    // Simulate a lost key file: loadOrCreateKey would mint a fresh key here.
+    // sealAll is called with a different key but the *same* sealedPath/outDir,
+    // exactly as seal.mjs would after the key file was lost and regenerated.
+    const key2 = newKey();
+    const second = await sealAll({ state, thumbsDir, outDir, sealedPath, key: key2 });
+    assert.equal(second.written, 2, "a changed key must invalidate every cached hash, not just skip");
+    assert.equal(second.unchanged, 0);
+
+    // The new key must be able to open what's now on disk.
+    const manifestBlob = await readFile(join(outDir, "manifest.enc"));
+    const manifest = JSON.parse(openBytes(key2, manifestBlob).toString("utf8"));
+    assert.equal(manifest.artifacts[0].id, "a");
+
+    const thumbName = blobName(key2, "a");
+    const thumbBlob = await readFile(join(outDir, `${thumbName}.enc`));
+    assert.deepEqual(openBytes(key2, thumbBlob), Buffer.from("thumb bytes"));
+
+    // And the old key must NOT be able to open the new manifest blob.
+    assert.throws(() => openBytes(key1, manifestBlob));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("writeKey creates the key with mode 600 and its parent dir with mode 700", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "seal-writekey-"));
+  try {
+    const keyPath = join(dir, "nested", "artifacts.key");
+    const key = newKey();
+    await writeKey(keyPath, key);
+
+    const { stat } = await import("node:fs/promises");
+    const keyStat = await stat(keyPath);
+    const dirStat = await stat(join(dir, "nested"));
+    assert.equal(keyStat.mode & 0o777, 0o600);
+    assert.equal(dirStat.mode & 0o777, 0o700);
+    assert.deepEqual(fromB64url((await readFile(keyPath, "utf8")).trim()), key);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("loadOrCreateKey tightens an existing key file's permissions if too loose", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "seal-tighten-"));
+  try {
+    const keyPath = join(dir, "artifacts.key");
+    const key = newKey();
+    await writeFile(keyPath, b64url(key), { mode: 0o644 }); // too loose, simulating a stray key file
+    const loaded = await loadOrCreateKey(keyPath);
+    assert.deepEqual(loaded, key);
+
+    const { stat } = await import("node:fs/promises");
+    const keyStat = await stat(keyPath);
+    assert.equal(keyStat.mode & 0o777, 0o600);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
