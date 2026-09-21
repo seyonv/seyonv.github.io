@@ -10,6 +10,10 @@ if [ "$branch" != "main" ]; then
 fi
 
 lock="${TMPDIR:-/tmp}/seyonv-site-publish.lock"
+if [ -e "$lock" ] && find "$lock" -maxdepth 0 -mmin +60 | grep -q .; then
+  echo "Removing stale publish lock."
+  rmdir "$lock"
+fi
 if ! mkdir "$lock" 2>/dev/null; then
   echo "Another publish is running."
   exit 0
