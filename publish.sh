@@ -9,6 +9,13 @@ if [ "$branch" != "main" ]; then
   exit 1
 fi
 
+lock="${TMPDIR:-/tmp}/seyonv-site-publish.lock"
+if ! mkdir "$lock" 2>/dev/null; then
+  echo "Another publish is running."
+  exit 0
+fi
+trap 'rmdir "$lock"' EXIT
+
 node scripts/sync-artifacts.mjs
 node scripts/thumbs.mjs || echo "thumbs: failed, keeping previous thumbnails"
 node scripts/seal.mjs

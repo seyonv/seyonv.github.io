@@ -1,0 +1,9 @@
+# Defense in depth: only the sealed gallery page and its ciphertext may be
+# committed here. Nothing else this directory might ever accumulate
+# (plaintext state, raw thumbnails, etc.) can slip in by accident.
+/*
+!/index.html
+!/data/
+/data/*
+!/data/*.enc
+!/.gitignore
