@@ -4,7 +4,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  newKey, sealBytes, openBytes, blobName, b64url, fromB64url, sealAll, writeKey, loadOrCreateKey,
+  newKey, sealBytes, openBytes, blobName, b64url, fromB64url, sealAll, writeKey, loadOrCreateKey, loadKeySafely,
 } from "../scripts/lib/seal.mjs";
 
 test("sealBytes then openBytes round-trips", () => {
@@ -231,6 +231,25 @@ test("loadOrCreateKey tightens an existing key file's permissions if too loose",
     const { stat } = await import("node:fs/promises");
     const keyStat = await stat(keyPath);
     assert.equal(keyStat.mode & 0o777, 0o600);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("loadKeySafely refuses to mint a key when sealed data exists, creates one on first run", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "seal-key-"));
+  try {
+    const keyPath = join(dir, "cfg", "artifacts.key"), sealed = join(dir, "sealed.json"), manifest = join(dir, "manifest.enc");
+    await writeFile(sealed, "{}");
+    await assert.rejects(loadKeySafely(keyPath, [sealed, manifest]), /key missing .*--rotate/);
+    await rm(sealed);
+    await writeFile(manifest, "x");
+    await assert.rejects(loadKeySafely(keyPath, [sealed, manifest]), /key missing/);
+    await assert.rejects(readFile(keyPath));
+    await rm(manifest);
+    const key = await loadKeySafely(keyPath, [sealed, manifest]);
+    assert.equal(key.length, 32);
+    assert.deepEqual(await loadKeySafely(keyPath, [sealed, manifest]), key);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

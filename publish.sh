@@ -9,7 +9,7 @@ if [ "$branch" != "main" ]; then
   exit 1
 fi
 
-lock="${TMPDIR:-/tmp}/seyonv-site-publish.lock"
+lock="$(git rev-parse --git-dir)/publish.lock"
 if [ -e "$lock" ] && find "$lock" -maxdepth 0 -mmin +60 | grep -q .; then
   echo "Removing stale publish lock."
   rmdir "$lock"
@@ -23,7 +23,7 @@ trap 'rmdir "$lock"' EXIT
 node scripts/sync-artifacts.mjs
 node scripts/thumbs.mjs || echo "thumbs: failed, keeping previous thumbnails"
 node scripts/seal.mjs
-git add -A artifacts index.html
+git add -A artifacts
 
 committed=0
 if ! git diff --cached --quiet; then

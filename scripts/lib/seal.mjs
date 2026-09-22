@@ -53,6 +53,16 @@ export async function loadOrCreateKey(keyPath) {
   return key;
 }
 
+// Like loadOrCreateKey, but refuses to mint a new key when sealed output already
+// exists (`markers`): a missing key there means it was lost, and a silent new key
+// would re-seal everything under a key the published page doesn't have.
+export async function loadKeySafely(keyPath, markers = []) {
+  if (!existsSync(keyPath) && markers.some((p) => existsSync(p))) {
+    throw new Error(`key missing (${keyPath}) but sealed data exists — run with --rotate to create a new one deliberately`);
+  }
+  return loadOrCreateKey(keyPath);
+}
+
 // Build the public manifest object (unsealed, in memory only) from STATE rows.
 // `thumbsDir` is scanned for `<id>.jpg` files to decide which rows get a thumb.
 export async function buildManifest({ state, thumbsDir, key }) {

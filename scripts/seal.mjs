@@ -5,7 +5,7 @@ import { readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { STATE, THUMBS, SEALED, KEY, REPO } from "./lib/paths.mjs";
-import { loadOrCreateKey, newKey, writeKey, sealAll } from "./lib/seal.mjs";
+import { loadKeySafely, newKey, writeKey, sealAll } from "./lib/seal.mjs";
 
 const rotate = process.argv.includes("--rotate");
 const outDir = join(REPO, "artifacts", "data");
@@ -18,7 +18,7 @@ async function main() {
     if (existsSync(SEALED)) await rm(SEALED);
     console.log("rotated: new key written, sealed state cleared");
   } else {
-    key = await loadOrCreateKey(KEY);
+    key = await loadKeySafely(KEY, [SEALED, join(outDir, "manifest.enc")]);
   }
 
   const state = JSON.parse(await readFile(STATE, "utf8"));
@@ -29,6 +29,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error(err.message?.startsWith("key missing") ? err.message : err);
   process.exit(1);
 });

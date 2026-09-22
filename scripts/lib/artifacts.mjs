@@ -15,6 +15,7 @@ export function extractEvents(lines, ctx) {
     const content = d?.message?.content;
     if (!Array.isArray(content)) continue;
     for (const c of content) {
+      if (!c || typeof c !== "object") continue;
       if (c.type === "tool_use" && c.name === "Artifact") uses.set(c.id, { input: c.input || {}, cwd: d.cwd });
       if (c.type !== "tool_result" || c.is_error || !uses.has(c.tool_use_id)) continue;
       const { input, cwd } = uses.get(c.tool_use_id), r = d.toolUseResult || {}, ts = d.timestamp;

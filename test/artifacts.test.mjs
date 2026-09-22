@@ -37,7 +37,7 @@ test("artifactId: null for URLs that aren't /artifact/<id>, or whose id isn't a 
 
 test("isSafeId: accepts uuids and short ids, rejects path-like ids", () => {
   assert.equal(isSafeId("00000000-0000-4000-8000-000000000001"), true);
-  assert.equal(isSafeId("Mn2R64kNMUfmeFjBJHv1nz"), true);
+  assert.equal(isSafeId("AbCdEfGhIjKlMnOpQrStUv"), true);
   assert.equal(isSafeId("../x"), false);
   assert.equal(isSafeId("a/b"), false);
   assert.equal(isSafeId(""), false);
@@ -362,4 +362,14 @@ test("rule7: running the reduction twice on the same input gives equal JSON", ()
   const a = JSON.stringify(reduceArtifacts(events, {}));
   const b = JSON.stringify(reduceArtifacts(events, {}));
   assert.equal(a, b);
+});
+
+test("extractEvents skips null and non-object content elements", () => {
+  const [assistant, user] = publishLine({ ts: "2026-01-01T00:00:00Z" });
+  const a = JSON.parse(assistant), u = JSON.parse(user);
+  a.message.content.unshift(null, "text", 3);
+  u.message.content.push(null, false);
+  const events = extractEvents([JSON.stringify(a), JSON.stringify(u)], ctx);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].type, "publish");
 });
