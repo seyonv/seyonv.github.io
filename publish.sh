@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Sync artifacts from transcripts, refresh thumbnails, seal, commit and push.
+# Sync artifacts from transcripts, refresh thumbnails, seal artifacts and build
+# plans, commit and push.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -23,7 +24,8 @@ trap 'rmdir "$lock"' EXIT
 node scripts/sync-artifacts.mjs
 node scripts/thumbs.mjs || echo "thumbs: failed, keeping previous thumbnails"
 node scripts/seal.mjs
-git add -A artifacts
+node scripts/plans.mjs
+git add -A artifacts plans
 
 committed=0
 if ! git diff --cached --quiet; then

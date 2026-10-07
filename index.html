@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Seyon Vasantharajan</title>
-<meta name="description" content="Visual explainers on technical concepts and papers, and a private gallery of things built along the way.">
+<meta name="description" content="Visual explainers on technical concepts and papers, plus a private gallery and build plans.">
 <style>
 :root{
   --bg:#fbfbf9; --surface:#f4f4f1; --surface2:#ecece8; --border:#dedcd6;
@@ -20,10 +20,10 @@
 }
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;display:flex;align-items:center;background:var(--bg);color:var(--text);font-family:-apple-system,"Inter",system-ui,sans-serif;line-height:1.45}
-.wrap{width:100%;max-width:760px;margin:0 auto;padding:48px 24px}
+.wrap{width:100%;max-width:1000px;margin:0 auto;padding:48px 24px}
 h1{font-size:30px;font-weight:600;margin:0 0 6px;letter-spacing:-0.015em}
 .sub{font-size:15px;color:var(--muted);margin:0 0 28px}
-.doors{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.doors{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .door{display:flex;flex-direction:column;gap:8px;min-height:210px;padding:22px 22px 20px;color:inherit;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;transition:border-color .15s,transform .15s}
 .door:hover,.door:focus-visible{border-color:var(--accent-border);transform:translateY(-2px);outline:none}
 .door .icon{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px;background:var(--surface2);margin-bottom:6px}
@@ -57,7 +57,13 @@ h1{font-size:30px;font-weight:600;margin:0 0 6px;letter-spacing:-0.015em}
       <span class="icon" aria-hidden="true">🗂️</span>
       <b>Artifacts<span class="arr">→</span></b>
       <p>Pages Claude has built with me</p>
-      <span class="note" id="artState">🔒 Private</span>
+      <span class="note lockState">🔒 Private</span>
+    </a>
+    <a class="door" href="/plans/">
+      <span class="icon" aria-hidden="true">🧭</span>
+      <b>Build Plans<span class="arr">→</span></b>
+      <p>Living plans for things I'm about to build</p>
+      <span class="note lockState">🔒 Private</span>
     </a>
   </div>
 </main>
@@ -78,9 +84,10 @@ fetch("/explainers/hub.json")
 let unlocked = false;
 try { unlocked = !!localStorage.getItem("seyonv-artifacts-key"); } catch {}
 if (unlocked) {
-  const s = document.getElementById("artState");
-  s.textContent = "🔓 Unlocked on this browser";
-  s.classList.add("on");
+  for (const s of document.querySelectorAll(".lockState")) {
+    s.textContent = "🔓 Unlocked on this browser";
+    s.classList.add("on");
+  }
 }
 </script>
 </body>

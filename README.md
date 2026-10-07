@@ -11,6 +11,7 @@ in the private repo `seyonv/jekyll-blog-archive`, on branch
 
 - `index.html` - landing page
 - `artifacts/` - encrypted gallery (data lives in `artifacts/data/`)
+- `plans/` - encrypted Build Plans (data lives in `plans/data/`)
 - `scripts/` - site and gallery tooling (`scripts/lib/` for shared code)
 - `docs/` - specs, plans, and other project docs
 
@@ -32,7 +33,11 @@ committed to this repo.
    without cookies) and is not run by `publish.sh`.
 3. `scripts/seal.mjs` - encrypts the state and thumbnails into
    `artifacts/data/*.enc`. Only ciphertext is ever written under this repo.
-4. Stages, commits, and pushes `artifacts/` and `index.html`.
+4. `scripts/plans.mjs` - finds every plan-page folder (`~/Desktop/repos/*/`
+   with a `.plan/` dir), bundles its `index.html` into one read-only page (shell
+   CSS/JS and images inlined, chat and versions hidden), and encrypts it into
+   `plans/data/` with the same key, so one unlock opens both sections.
+5. Stages, commits, and pushes `artifacts/` and `plans/`.
 
 ### Unlocking the gallery
 
