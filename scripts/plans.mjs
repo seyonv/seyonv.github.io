@@ -7,19 +7,10 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { KEY, SEALED, REPO } from "./lib/paths.mjs";
 import { loadKeySafely, sealBytes, openBytes, blobName } from "./lib/seal.mjs";
-import { bundlePlan, planMeta } from "./lib/plans.mjs";
+import { bundlePlan, planMeta, findPlanDirs } from "./lib/plans.mjs";
 
 const REPOS = join(homedir(), "Desktop", "repos");
 const outDir = join(REPO, "plans", "data");
-
-async function findPlans() {
-  const dirs = [];
-  for (const d of await readdir(REPOS, { withFileTypes: true })) {
-    const dir = join(REPOS, d.name);
-    if (d.isDirectory() && existsSync(join(dir, ".plan")) && existsSync(join(dir, "index.html"))) dirs.push({ slug: d.name, dir });
-  }
-  return dirs;
-}
 
 async function main() {
   const key = await loadKeySafely(KEY, [SEALED, join(REPO, "artifacts", "data", "manifest.enc")]);
@@ -40,7 +31,7 @@ async function main() {
   };
 
   const plans = [];
-  for (const { slug, dir } of await findPlans()) {
+  for (const { slug, dir } of findPlanDirs(REPOS)) {
     const html = await readFile(join(dir, "index.html"), "utf8");
     const read = (rel) => { try { return readFileSync(join(dir, rel)); } catch { return null; } };
     const blob = blobName(key, "plan:" + slug);

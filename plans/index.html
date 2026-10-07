@@ -83,6 +83,9 @@ h1{font-size:30px;font-weight:600;margin:0 0 6px;letter-spacing:-0.015em}
 .plan .thumb .k{font:11px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .plan .thumb .t{font-size:26px;line-height:1.15;letter-spacing:-0.01em;color:var(--text)}
 .plan .meta p{-webkit-line-clamp:3}
+.hint{margin:-6px 0 22px;padding:12px 15px;font-size:14px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.hint b{color:var(--text);font-weight:600}
+code{font:13px "IBM Plex Mono",ui-monospace,monospace;padding:1px 6px;border-radius:6px;background:var(--surface2);color:var(--text)}
 </style>
 </head>
 <body>
@@ -111,6 +114,7 @@ h1{font-size:30px;font-weight:600;margin:0 0 6px;letter-spacing:-0.015em}
     </div>
     <button class="btn" id="lockBtn" type="button">Lock this browser</button>
   </div>
+  <p class="hint"><b>Want chat in each plan?</b> These pages are read-only. On your Mac, run <code>builds</code> in a terminal to open the local versions, where every plan has Claude chat and version history.</p>
   <div class="grid" id="grid"></div>
   <p class="empty" id="empty" hidden>No plans yet.</p>
   <p class="foot">Living plan pages, shown read-only. Decrypted in this browser; the data on the server is encrypted.</p>

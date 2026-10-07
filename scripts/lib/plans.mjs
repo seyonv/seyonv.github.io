@@ -1,5 +1,14 @@
-// Bundles a plan-page folder (index.html + _shell/ + local images) into one
-// self-contained, read-only HTML string. Pure apart from the `read` callback.
+// Plan-page folders: finding them, and bundling one (index.html + _shell/ +
+// local images) into a self-contained, read-only HTML string.
+import { readdirSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+// A plan-page folder is any repo with an index.html and a .plan/ state dir.
+export function findPlanDirs(reposRoot) {
+  return readdirSync(reposRoot, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && existsSync(join(reposRoot, d.name, ".plan")) && existsSync(join(reposRoot, d.name, "index.html")))
+    .map((d) => ({ slug: d.name, dir: join(reposRoot, d.name) }));
+}
 
 const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml", webp: "image/webp" };
 const isLocal = (p) => !/^(?:[a-z]+:|\/\/|\/|#)/i.test(p) && !p.includes("..");
@@ -13,7 +22,7 @@ const BACK = `<a href="/plans/" style="position:fixed;right:16px;bottom:16px;z-i
 
 const text = (html) => html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 
-// read(relPath) -> Buffer | null
+// Pure apart from read(relPath) -> Buffer | null.
 export function bundlePlan(html, read) {
   const deferred = [];
   let out = html

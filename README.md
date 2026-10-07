@@ -39,6 +39,13 @@ committed to this repo.
    `plans/data/` with the same key, so one unlock opens both sections.
 5. Stages, commits, and pushes `artifacts/` and `plans/`.
 
+### Build Plans with chat (local)
+
+The deployed plans are read-only. `builds` (an alias in `~/.bash_profile` for
+`node scripts/builds.mjs`) starts each plan's local plan-page server and opens
+a local index at `~/.local/share/seyonv-site/builds.html` that links to them,
+with Claude chat and versions working.
+
 ### Unlocking the gallery
 
 The gallery is encrypted; visiting it directly shows nothing. Get the one-time
